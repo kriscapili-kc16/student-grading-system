@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Grading System</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f4f6f8; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        /* Form Layout */
+        form { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 20px; }
+        input, button { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; }
+        .save-btn { background-color: #0066cc; color: white; cursor: pointer; border: none; font-weight: bold; }
+        
+        /* Delete Button Style */
+        .delete-btn { background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .delete-btn:hover { background-color: #c82333; }
+
+        /* Fixed Table Layout */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; word-wrap: break-word; }
+        th { background-color: #f0f0f0; }
+
+        /* Column Widths (Total: 100%) */
+        th:nth-child(1) { width: 6%; }  /* ID */
+        th:nth-child(2) { width: 34%; } /* Student Name */
+        th:nth-child(3), 
+        th:nth-child(4), 
+        th:nth-child(5), 
+        th:nth-child(6), 
+        th:nth-child(7) { width: 10%; } /* Math, Science, English, History, Average */
+        th:nth-child(8) { width: 10%; } /* Actions */
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Student Grading Dashboard</h2>
+
+    <!-- Grade Input Form -->
+    <form id="gradeForm">
+        <input type="text" id="studentName" placeholder="Student Name" required>
+        <input type="number" id="mathScore" placeholder="Math" min="0" max="100" required>
+        <input type="number" id="scienceScore" placeholder="Science" min="0" max="100" required>
+        <input type="number" id="englishScore" placeholder="English" min="0" max="100" required>
+        <input type="number" id="historyScore" placeholder="History" min="0" max="100" required>
+        <button type="submit" class="save-btn">Save Grade</button>
+    </form>
+
+    <!-- Grades Table -->
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Student Name</th>
+                <th>Math</th>
+                <th>Science</th>
+                <th>English</th>
+                <th>History</th>
+                <th>Average</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="gradesTableBody"></tbody>
+    </table>
+</div>
+
+<script>
+    const API_URL = "http://127.0.0.1:8000/api/grades";
+
+    // Load grades from SQLite database
+    async function loadGrades() {
+        const response = await fetch(API_URL);
+        const grades = await response.json();
+        
+        const tbody = document.getElementById("gradesTableBody");
+        tbody.innerHTML = "";
+
+        grades.forEach(item => {
+            const row = `<tr>
+                <td>${item.id}</td>
+                <td>${item.student_name}</td>
+                <td>${item.math_score}%</td>
+                <td>${item.science_score}%</td>
+                <td>${item.english_score}%</td>
+                <td>${item.history_score}%</td>
+                <td><strong>${item.total_grade.toFixed(2)}%</strong></td>
+                <td>
+                    <button class="delete-btn" onclick="deleteGrade(${item.id})">Delete</button>
+                </td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    // Submit new student record
+    document.getElementById("gradeForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const payload = {
+            student_name: document.getElementById("studentName").value,
+            math_score: parseFloat(document.getElementById("mathScore").value),
+            science_score: parseFloat(document.getElementById("scienceScore").value),
+            english_score: parseFloat(document.getElementById("englishScore").value),
+            history_score: parseFloat(document.getElementById("historyScore").value)
+        };
+
+        await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        document.getElementById("gradeForm").reset();
+        loadGrades();
+    });
+
+    // Delete student record
+    async function deleteGrade(id) {
+        if (confirm("Are you sure you want to delete this record?")) {
+            await fetch(`${API_URL}/${id}`, {
+                method: "DELETE"
+            });
+            loadGrades();
+        }
+    }
+
+    loadGrades();
+</script>
+
+</body>
+</html>
